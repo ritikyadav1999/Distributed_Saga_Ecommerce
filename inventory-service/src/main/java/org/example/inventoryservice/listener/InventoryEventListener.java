@@ -1,7 +1,9 @@
 package org.example.inventoryservice.listener;
 
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.example.inventoryservice.event.OrderCreatedEvent;
+import org.example.inventoryservice.service.InventoryService;
 import org.springframework.data.redis.connection.stream.MapRecord;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.stream.StreamListener;
@@ -17,6 +19,7 @@ public class InventoryEventListener implements StreamListener<String, MapRecord<
 
     private final RedisTemplate<String,String> redisTemplate;
     private final ObjectMapper objectMapper;
+    private final InventoryService inventoryService;
 
     @Override
     public void onMessage(MapRecord<String, String, String> message) {
@@ -27,7 +30,7 @@ public class InventoryEventListener implements StreamListener<String, MapRecord<
             OrderCreatedEvent event = objectMapper.readValue(payload,OrderCreatedEvent.class);
 
 //            Business Logic
-            System.out.println(event.orderId());
+            inventoryService.processOrder(event);
 
 //            ACK only after successful processing
             redisTemplate.opsForStream()
