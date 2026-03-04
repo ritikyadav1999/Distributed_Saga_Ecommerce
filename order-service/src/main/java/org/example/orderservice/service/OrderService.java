@@ -4,17 +4,18 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.example.orderservice.dto.CreateOrderRequest;
 import org.example.orderservice.enity.*;
+import org.example.orderservice.events.InventoryEvent;
 import org.example.orderservice.events.OrderCreatedEvent;
 import org.example.orderservice.repository.IdempotencyRecordRepo;
 import org.example.orderservice.repository.OrderRepo;
 import org.example.orderservice.repository.OutboxRepo;
+import org.example.orderservice.repository.ProcessedEventsRepo;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.ObjectMapper;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.HashMap;
 import java.util.UUID;
 
 @Service
@@ -22,6 +23,7 @@ import java.util.UUID;
 public class OrderService {
 
     private final IdempotencyRecordRepo  idempotencyRecordRepo;
+    private final ProcessedEventsRepo processedEventsRepo;
     private final OrderRepo orderRepo;
     private final OutboxRepo outboxRepo;
     private final ObjectMapper objectMapper;
@@ -92,6 +94,31 @@ public class OrderService {
 
         return order;
 
+    }
+
+
+    @Transactional
+    public void processInventoryEvent(InventoryEvent event){
+
+        ProcessedEvent processedEvent = new ProcessedEvent();
+        processedEvent.setEventId(event.eventId());
+        processedEvent.setCorrelationId(event.correlationId());
+
+        try {
+            processedEventsRepo.save(processedEvent);
+        }
+        catch (DataIntegrityViolationException exception){
+            return;
+        }
+
+        Order order = orderRepo.findById(event.orderId()).orElseThrow(() -> new RuntimeException("Not Found"));
+        if(event.eventType().equals("INVENTORY_RESERVED")){
+            order.setOrderStatus(OrderStatus.INVENTORY_RESERVED);
+        }
+        else {
+            order.setOrderStatus(OrderStatus.CANCELLED);
+        }
+        orderRepo.save(order);
     }
 
 }
