@@ -1,14 +1,14 @@
-package org.example.inventoryservice.event;
+package org.example.orderservice.events;
 
-import java.math.BigDecimal;
 import java.util.UUID;
 
-public record InventoryEvent(
+public record PaymentEvent(
         UUID eventId,
         String eventType,
         UUID userId,
         UUID orderId,
         String correlationId,
         String eventVersion
+
 ) {
 }

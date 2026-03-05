@@ -1,6 +1,5 @@
-package org.example.inventoryservice.event;
+package org.example.paymentservice.event;
 
-import java.math.BigDecimal;
 import java.util.UUID;
 
 public record InventoryEvent(

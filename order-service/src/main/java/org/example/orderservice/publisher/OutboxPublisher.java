@@ -33,6 +33,7 @@ public class OutboxPublisher {
                     Map<String,String> map = Map.of(
                             "payload",outbox.getPayload()
                     );
+
                     redisTemplate.opsForStream()
                             .add(StreamRecords.mapBacked(map).withStreamKey("order-events"));
 
