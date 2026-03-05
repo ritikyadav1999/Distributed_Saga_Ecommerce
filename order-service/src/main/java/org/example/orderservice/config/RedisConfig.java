@@ -1,7 +1,8 @@
 package org.example.orderservice.config;
 
 import lombok.RequiredArgsConstructor;
-import org.example.orderservice.listener.EventListener;
+import org.example.orderservice.listener.InventoryEventListener;
+import org.example.orderservice.listener.PaymentEventListener;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -22,7 +23,8 @@ public class RedisConfig {
     private static final String STREAM_NAME = "inventory-events";
     private static final String GROUP_NAME = "order-group";
 
-    private final EventListener  eventListener;
+    private final InventoryEventListener eventListener;
+    private final PaymentEventListener  paymentEventListener;
 
     @Bean
     public StreamMessageListenerContainer<String, MapRecord<String,String,String>> streamMessageListenerContainer(
@@ -47,6 +49,12 @@ public class RedisConfig {
                     Consumer.from(GROUP_NAME,consumerName),
                     StreamOffset.create(STREAM_NAME, ReadOffset.lastConsumed()),
                     eventListener
+            );
+
+            container.receive(
+                    Consumer.from("order-group",consumerName),
+                    StreamOffset.create("payment-events",ReadOffset.lastConsumed()),
+                    paymentEventListener
             );
 
             container.start();
